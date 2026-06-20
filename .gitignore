@@ -51,3 +51,5 @@ desktop.ini
 # Misc tile cache (if ever run locally)
 tiles-cache/
 public/data/
+
+.vercel
