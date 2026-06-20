@@ -9,10 +9,10 @@ const TWO_PI = Math.PI * 2;
 
 // Scalar score of a candidate observer. Accumulates, over every visible ground
 // cell within range:
-//   visArea  — near-weighted count (closer game = more valuable)
-//   edgeVis  — near-weighted forest/opening edge (where game moves)
-//   windDot  — near-weighted "is this habitat upwind of me?" (scent discipline)
-//   cells    — raw visible cell count (for the visible-% reason string)
+//   visArea - near-weighted count (closer game = more valuable)
+//   edgeVis - near-weighted forest/opening edge (where game moves)
+//   windDot - near-weighted "is this habitat upwind of me?" (scent discipline)
+//   cells - raw visible cell count (for the visible-% reason string)
 export function observeScore(g, ox, oy, p) {
   const { gridW, gridH, heights, zc, edge, metersPerPx } = g;
   const eyeZ = heights[oy * gridW + ox] + p.eyeHeight;

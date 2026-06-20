@@ -8,8 +8,8 @@
 //   GET /api/tiles?src=dem|img&z=<z>&x=<x>&y=<y>
 //
 // Sources (both keyless):
-//   dem  — AWS Open Data "terrain-tiles", Terrarium-encoded PNG (Mapzen/NASA/USGS)
-//   img  — Esri World Imagery (note: ArcGIS tile path is /{z}/{y}/{x})
+//   dem - AWS Open Data "terrain-tiles", Terrarium-encoded PNG (Mapzen/NASA/USGS)
+//   img - Esri World Imagery (note: ArcGIS tile path is /{z}/{y}/{x})
 
 const SOURCES = {
   dem: (z, x, y) =>

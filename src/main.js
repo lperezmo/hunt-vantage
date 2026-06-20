@@ -20,8 +20,8 @@ const map = setupMap((box) => {
   const area = bboxAreaKm2(box);
   $('draw-hint').textContent =
     area > MAX_AREA_KM2
-      ? `⚠ ~${area.toFixed(0)} km² is large — analysis is capped at ${MAX_AREA_KM2} km² and may be coarse. Draw a smaller area for detail.`
-      : `Area ~${area.toFixed(1)} km². Ready — press “Find best vantage points”.`;
+      ? `Heads up: ~${area.toFixed(0)} km² is large. Analysis is capped at ${MAX_AREA_KM2} km² and may be coarse. Draw a smaller area for detail.`
+      : `Area ~${area.toFixed(1)} km². Ready - press “Find best vantage points”.`;
   endDrawUi();
 });
 
@@ -32,7 +32,7 @@ function endDrawUi() {
   drawingMode = false;
   document.body.classList.remove('drawing');
   $('draw-btn').classList.remove('active');
-  $('draw-btn').innerHTML = '✏️ Draw hunting area';
+  $('draw-btn').textContent = 'Draw hunting area';
 }
 
 // ---- search ----
@@ -59,8 +59,8 @@ $('draw-btn').addEventListener('click', () => {
   drawingMode = true;
   document.body.classList.add('drawing'); // collapses the sidebar on mobile for room
   $('draw-btn').classList.add('active');
-  $('draw-btn').innerHTML = '✕ Cancel drawing';
-  $('draw-hint').textContent = 'Drag a box across your ground — press and drag on the map (touch works).';
+  $('draw-btn').textContent = 'Cancel drawing';
+  $('draw-hint').textContent = 'Drag a box across your ground - press and drag on the map (touch works).';
 });
 $('clear-btn').addEventListener('click', () => {
   map.clearAll();
@@ -147,7 +147,7 @@ async function open3d(rank) {
   const spot = lastResult.spots.find((s) => s.rank === rank);
   if (!spot) return;
   $('viewer').hidden = false;
-  $('viewer-title').textContent = `3D stand-eye view — Vantage ${rank}`;
+  $('viewer-title').textContent = `3D stand-eye view - Vantage ${rank}`;
   view3dMod = view3dMod || await import('./scene/view3d.js');
   // give the canvas a frame to lay out before sizing the renderer
   requestAnimationFrame(() => view3dMod.openViewer($('viewer-canvas'), lastResult, spot));

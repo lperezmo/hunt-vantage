@@ -1,8 +1,8 @@
-# Hunt Vantage — Best Glassing/Stand Spot Finder
+# Hunt Vantage - Best Glassing/Stand Spot Finder
 
 A standalone, Vercel-deployable web app: a hunter enters a location (or draws a
-box over their ground), and the app returns the **best vantage points** —
-ranked, mapped, and explained — using real elevation, satellite-derived tree
+box over their ground), and the app returns the **best vantage points** - 
+ranked, mapped, and explained - using real elevation, satellite-derived tree
 cover, and a line-of-sight (viewshed) analysis.
 
 This plan is grounded in a teardown of `shlokkhemani/ode-to-yosemite` (cloned
@@ -25,12 +25,12 @@ We lift that pipeline and add the new IP: an **on-demand** version of it plus a
 | `tools/verify.mjs`, `tools/shoot.mjs` | Headless Playwright control + screenshot rig | Test harness, ported. |
 
 ### New (the actual product)
-1. **2D map UI** — search-to-location + draw-a-box, heatmap overlay, ranked pins.
-2. **On-demand data pipeline** — fetch tiles for *any* bbox at request time (the
+1. **2D map UI** - search-to-location + draw-a-box, heatmap overlay, ranked pins.
+2. **On-demand data pipeline** - fetch tiles for *any* bbox at request time (the
    reference bakes 76 MB for one fixed valley; we can't ship that per parcel).
-3. **Viewshed + vantage scoring engine** — the core algorithm (§4).
-4. **Hunting-domain factors** — wind, sun/aspect, edge habitat, access (§4).
-5. **Serverless tile proxy** — solves browser CORS and shields any keyed source.
+3. **Viewshed + vantage scoring engine** - the core algorithm (§4).
+4. **Hunting-domain factors** - wind, sun/aspect, edge habitat, access (§4).
+5. **Serverless tile proxy** - solves browser CORS and shields any keyed source.
 
 ---
 
@@ -38,20 +38,20 @@ We lift that pipeline and add the new IP: an **on-demand** version of it plus a
 
 1. **Land** on a full-screen satellite map (MapLibre GL). A search bar geocodes
    a place name / coordinates and flies there.
-2. **Define the ground** — draw a rectangle (or polygon) over the hunting area.
+2. **Define the ground** - draw a rectangle (or polygon) over the hunting area.
    Soft cap ~25 km² with a friendly warning above that.
-3. **Analyze** — one button. Progress bar while tiles download + analysis runs.
-4. **See results** — a green→red **vantage heatmap** drapes over the parcel; the
+3. **Analyze** - one button. Progress bar while tiles download + analysis runs.
+4. **See results** - a green→red **vantage heatmap** drapes over the parcel; the
    top 3–5 spots drop as pins with a one-line score + reason
    (*"Sees 78% of the parcel · 42 m above the meadow · faces E for morning light
    · downwind of the bedding edge"*).
-5. **Inspect a pin** — side panel shows that spot's **viewshed footprint**
+5. **Inspect a pin** - side panel shows that spot's **viewshed footprint**
    (exactly what's visible from there) shaded on the map, plus its stat
    breakdown and weight contributions.
-6. **3D stand-eye view** (optional) — drop into the Yosemite-style Three.js
+6. **3D stand-eye view** (optional) - drop into the Yosemite-style Three.js
    scene of just this parcel, camera at the chosen vantage, sightlines drawn,
    time-of-day + wind arrow toggles.
-7. **Share / export** — shareable URL (bbox + weights encoded), GPX/KML pin
+7. **Share / export** - shareable URL (bbox + weights encoded), GPX/KML pin
    export for a GPS or onX/HuntStand.
 
 ---
@@ -70,11 +70,11 @@ Browser (static SPA on Vercel CDN)
 Vercel Edge/Serverless  /api/tiles  → AWS Terrarium DEM + imagery
   (CORS, edge caching, attribution, optional key shielding)
 
-Optional: Vercel KV / Blob — cache analysis by bbox+weights hash.
+Optional: Vercel KV / Blob - cache analysis by bbox+weights hash.
 ```
 
 **Why client-side compute (not an `/api/analyze`):** hunting parcels are small.
-A 40–640-acre property at z14 (~7.6 m/sample) is only ~60–250 samples per side —
+A 40–640-acre property at z14 (~7.6 m/sample) is only ~60–250 samples per side - 
 a few hundred KB of DEM. Running the viewshed in a Web Worker means **$0
 function compute, infinite scale, no 10s/60s Vercel timeout risk**, and instant
 re-runs when the user nudges a weight slider. We keep a server-side `/api/analyze`
@@ -89,13 +89,13 @@ attribution + the option to swap imagery sources without touching the client.
 ## 4. The vantage-scoring engine (core IP)
 
 ### 4.1 Inputs (all derived from the two keyless rasters)
-- **Elevation** `z(x,y)` — Terrarium DEM (bare-earth-ish; SRTM/USGS derived).
-- **Tree density** `d(x,y)` ∈ [0,1] — ported `canopy()` classifier + slope mask.
+- **Elevation** `z(x,y)` - Terrarium DEM (bare-earth-ish; SRTM/USGS derived).
+- **Tree density** `d(x,y)` ∈ [0,1] - ported `canopy()` classifier + slope mask.
 - **Canopy height surface** `zc = z + d · H_tree` (H_tree ≈ 20–30 m configurable)
-  — what actually blocks a sightline. (Enhancement: swap in Meta/WRI 1 m global
+ - what actually blocks a sightline. (Enhancement: swap in Meta/WRI 1 m global
   **canopy height** raster for real heights instead of `d · H_tree`.)
-- **Slope & aspect** — finite-difference of the DEM (already done for the mask).
-- **Edge map** — gradient magnitude of `d`; high where forest meets opening
+- **Slope & aspect** - finite-difference of the DEM (already done for the mask).
+- **Edge map** - gradient magnitude of `d`; high where forest meets opening
   (game transition zones).
 - **Optional**: prevailing wind vector (user), sun azimuth for the hunt window,
   OSM roads for access (ported `tools/fetch-osm.mjs`).
@@ -107,7 +107,7 @@ height), cast `R` rays (e.g. 360 at 1°) out to a max glassing range `Rmax`
 elevation angle**. A target cell is *visible* if its angle (using ground height
 `z`, since you want to see game on the ground) exceeds the running max set by the
 **canopy surface** `zc` of everything between observer and target. This is the
-classic R2/R3 sweep — O(R · Rmax/step) per observer.
+classic R2/R3 sweep - O(R · Rmax/step) per observer.
 
 ```
 visible(observer):
@@ -130,12 +130,12 @@ defaults shown):
 | Factor | Default wt | Meaning |
 |---|---|---|
 | **Visible huntable area** | 0.35 | Σ visible cells, weighted ↑ for near cells (game in range) and for **huntable habitat** (meadow/edge, not bare cliff/water). |
-| **Edge visibility** | 0.20 | How much forest↔opening edge the viewshed covers — where game moves. |
+| **Edge visibility** | 0.20 | How much forest↔opening edge the viewshed covers - where game moves. |
 | **Local prominence** | 0.15 | Height above the local mean (better sightlines, thermals). |
 | **Sun / aspect** | 0.10 | Aspect vs. sun azimuth for the chosen hunt window (sun at your back, game lit; reduce glare). |
 | **Wind discipline** | 0.10 | Penalize positions whose scent (downwind cone) blows *into* the high-value habitat the viewshed covers. |
 | **Self-concealment** | 0.05 | Small bonus for being at/just inside a forest edge (see without being skylined). |
-| **Access** | 0.05 | Distance from OSM roads — closer = easier (user can invert to favor remote/low-pressure). |
+| **Access** | 0.05 | Distance from OSM roads - closer = easier (user can invert to favor remote/low-pressure). |
 
 Score raster → **non-maximum suppression** (min spacing, e.g. 150 m) → ranked
 list of distinct vantage candidates, each with a generated plain-English reason
@@ -149,7 +149,7 @@ Full reverse-viewshed (every cell observes) is expensive, so:
    forest cells (poor sightlines) before the expensive pass.
 3. **Web Worker** (or a small pool) keeps the main thread at 60 fps.
 4. **WebGPU/WebGL2 compute** as an optional accelerator (viewshed as a fragment
-   pass into a render target) for large parcels — Phase 5 enhancement.
+   pass into a render target) for large parcels - Phase 5 enhancement.
 5. **Hard cap + warning** on parcel area; log any downsampling so we never imply
    full-res coverage when we sampled.
 
@@ -192,23 +192,23 @@ hunt-vantage/
 
 ## 6. Build phases
 
-- **Phase 0 — Scaffold (½ day).** Vite SPA, MapLibre satellite map, geocode
+- **Phase 0 - Scaffold (½ day).** Vite SPA, MapLibre satellite map, geocode
   search, draw-rectangle, deploy a hello-world to Vercel. *Done = a box on a map,
   live on a vercel.app URL.*
-- **Phase 1 — On-demand data (1–2 days).** Port tile math + Terrarium decode +
+- **Phase 1 - On-demand data (1–2 days).** Port tile math + Terrarium decode +
   `canopy()` mask into `data/` running for a user bbox; add `/api/tiles` proxy.
   *Done = draw a box → console shows a correct heightmap + forest mask (validate
   against a known peak elevation & a known meadow).* 
-- **Phase 2 — Viewshed + heatmap (2–3 days).** `viewshed.js` + `score.js` in a
+- **Phase 2 - Viewshed + heatmap (2–3 days).** `viewshed.js` + `score.js` in a
   worker; vantage heatmap overlay + top-5 pins with reasons; click-a-pin shows
   its viewshed footprint. *Done = ranked spots that visibly make sense on flat
   vs. ridge terrain.*
-- **Phase 3 — Hunting factors (1–2 days).** Wind, sun/aspect, edge, access +
+- **Phase 3 - Hunting factors (1–2 days).** Wind, sun/aspect, edge, access +
   weight sliders + live re-score; GPX/KML export; shareable URL. 
-- **Phase 4 — 3D stand-eye view (2–3 days, optional).** Port the Three.js
+- **Phase 4 - 3D stand-eye view (2–3 days, optional).** Port the Three.js
   renderer for the single parcel; camera at vantage, draw visible-area shading +
   sightlines; time-of-day + wind arrow.
-- **Phase 5 — Polish (1–2 days).** Mobile layout, KV/Blob caching, WebGPU
+- **Phase 5 - Polish (1–2 days).** Mobile layout, KV/Blob caching, WebGPU
   viewshed for big parcels, attribution/ToS, error states, onboarding.
 
 ---
@@ -218,20 +218,20 @@ hunt-vantage/
 - **Imagery source / ToS.** Esri World Imagery (used by the reference) requires
   attribution and its ToS may not cover a third-party app. For **US hunting**,
   strongly consider **USDA NAIP** (≈0.6–1 m, public domain) as the canopy-
-  classification source — better than Esri and license-clean. Keep the source
+  classification source - better than Esri and license-clean. Keep the source
   pluggable behind `/api/tiles`.
 - **Canopy realism.** `canopy()` is leaf-on/summer-biased; deciduous winter
   cover is under-counted. The synthetic `d · H_tree` occluder is an
-  approximation — flag it, and offer the **global canopy-height raster** swap as
+  approximation - flag it, and offer the **global canopy-height raster** swap as
   the accuracy upgrade.
-- **DEM is bare-earth, not surface.** Good — it means we add canopy ourselves and
+- **DEM is bare-earth, not surface.** Good - it means we add canopy ourselves and
   the viewshed for *seeing game on the ground* is correct. (If we accidentally
   used a DSM we'd double-count trees.)
 - **CORS.** Solved by `/api/tiles`. Verify AWS/Esri response caching headers and
   set our own edge cache.
 - **Compute cost on large parcels.** Coarse-to-fine + cap + (optional) WebGPU.
 - **Not legal/safety advice.** Add a disclaimer: property boundaries, legal
-  shooting hours, and safe backstops are the hunter's responsibility — the app
+  shooting hours, and safe backstops are the hunter's responsibility - the app
   models *sightlines*, not legality.
 
 ---

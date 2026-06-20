@@ -105,7 +105,7 @@ export function setupMap(onBox) {
   function finishDraw(e) {
     if (!drawing || !startLngLat) return;
     const moved = startPt ? Math.hypot(e.clientX - startPt.x, e.clientY - startPt.y) : 0;
-    // a tap (no real drag) shouldn't create a degenerate box — keep drawing
+    // a tap (no real drag) shouldn't create a degenerate box - keep drawing
     if (moved < 12) {
       startLngLat = null;
       map.getSource('draw')?.setData(emptyFC());

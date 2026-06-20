@@ -3,7 +3,7 @@
 export function renderResults(container, spots, { onSelect, onView3d }) {
   container.innerHTML = '';
   if (!spots || !spots.length) {
-    container.innerHTML = '<p class="empty">No vantage points found — try a larger or more varied area.</p>';
+    container.innerHTML = '<p class="empty">No vantage points found - try a larger or more varied area.</p>';
     return { select: () => {} };
   }
 
@@ -24,7 +24,7 @@ export function renderResults(container, spots, { onSelect, onView3d }) {
       </div>
       <p class="why">${s.why}.</p>
       <div class="coords">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)} · ${s.elevation} m</div>
-      <button class="view3d">▶ 3D stand-eye view</button>`;
+      <button class="view3d">View in 3D</button>`;
     card.addEventListener('click', () => onSelect(s.rank));
     card.querySelector('.view3d').addEventListener('click', (e) => { e.stopPropagation(); onView3d(s.rank); });
     container.appendChild(card);
@@ -34,7 +34,7 @@ export function renderResults(container, spots, { onSelect, onView3d }) {
   const dl = document.createElement('button');
   dl.className = 'ghost';
   dl.style.marginTop = '8px';
-  dl.textContent = '⤓ Export waypoints (GPX)';
+  dl.textContent = 'Export waypoints (GPX)';
   dl.addEventListener('click', () => downloadGpx(spots));
   container.appendChild(dl);
 

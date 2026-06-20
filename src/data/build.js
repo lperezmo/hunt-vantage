@@ -1,4 +1,4 @@
-// On-demand parcel builder — the in-browser version of ode-to-yosemite's offline
+// On-demand parcel builder - the in-browser version of ode-to-yosemite's offline
 // data pipeline. Given a user bounding box it fetches Terrarium elevation tiles
 // and Esri imagery tiles (through /api/tiles), decodes them into a metric
 // heightmap, and classifies a tree-density "forest" mask from the imagery.
