@@ -107,6 +107,15 @@ footer { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px;
 .draw-rect { fill: rgba(143,191,79,.15); stroke: var(--accent-2); }
 
 @media (max-width: 640px) {
-  #sidebar { width: 100%; max-width: 100%; bottom: auto; max-height: 56vh; border-right: none; border-bottom: 1px solid var(--line); }
+  #sidebar { width: 100%; max-width: 100%; bottom: auto; max-height: 52vh; border-right: none; border-bottom: 1px solid var(--line); }
   #map { top: 0; }
+  /* while drawing, shrink the sidebar to header + draw controls so the map is usable */
+  body.drawing #sidebar { max-height: none; }
+  body.drawing #sidebar .search-row,
+  body.drawing #sidebar #analyze-btn,
+  body.drawing #sidebar #settings,
+  body.drawing #sidebar #progress,
+  body.drawing #sidebar #results,
+  body.drawing #sidebar footer { display: none; }
+  body.drawing #draw-btn { width: 100%; }
 }

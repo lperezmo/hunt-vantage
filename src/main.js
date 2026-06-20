@@ -22,8 +22,18 @@ const map = setupMap((box) => {
     area > MAX_AREA_KM2
       ? `⚠ ~${area.toFixed(0)} km² is large — analysis is capped at ${MAX_AREA_KM2} km² and may be coarse. Draw a smaller area for detail.`
       : `Area ~${area.toFixed(1)} km². Ready — press “Find best vantage points”.`;
-  $('draw-btn').classList.remove('active');
+  endDrawUi();
 });
+
+const DEFAULT_HINT = 'Tap “Draw hunting area”, then drag a box across your ground.';
+let drawingMode = false;
+
+function endDrawUi() {
+  drawingMode = false;
+  document.body.classList.remove('drawing');
+  $('draw-btn').classList.remove('active');
+  $('draw-btn').innerHTML = '✏️ Draw hunting area';
+}
 
 // ---- search ----
 async function doSearch() {
@@ -37,19 +47,29 @@ async function doSearch() {
 $('search-btn').addEventListener('click', doSearch);
 $('search').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 
-// ---- draw ----
+// ---- draw (toggle: tap again to cancel) ----
 $('draw-btn').addEventListener('click', () => {
+  if (drawingMode) {
+    map.cancelDraw();
+    endDrawUi();
+    $('draw-hint').textContent = DEFAULT_HINT;
+    return;
+  }
   map.beginDraw();
+  drawingMode = true;
+  document.body.classList.add('drawing'); // collapses the sidebar on mobile for room
   $('draw-btn').classList.add('active');
-  $('draw-hint').textContent = 'Now click-drag a box on the map over your ground.';
+  $('draw-btn').innerHTML = '✕ Cancel drawing';
+  $('draw-hint').textContent = 'Drag a box across your ground — press and drag on the map (touch works).';
 });
 $('clear-btn').addEventListener('click', () => {
   map.clearAll();
+  endDrawUi();
   lastResult = null; selectedRank = null;
   $('results').innerHTML = '';
   $('analyze-btn').disabled = true;
   $('clear-btn').hidden = true;
-  $('draw-hint').textContent = 'Click the button, then drag a box on the map over your ground.';
+  $('draw-hint').textContent = DEFAULT_HINT;
 });
 
 // ---- analyze ----

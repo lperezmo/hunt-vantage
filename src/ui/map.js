@@ -56,33 +56,68 @@ export function setupMap(onBox) {
     south: Math.min(a.lat, b.lat), north: Math.max(a.lat, b.lat),
   });
 
-  // ---- rectangle drawing ----
+  // ---- rectangle drawing (Pointer Events: works for mouse AND touch) ----
+  const canvasEl = map.getCanvas();
+  let startPt = null;        // {x, y} pixel of the first corner
+  let drawPointerId = null;
+
   function beginDraw() {
     drawing = true;
-    map.getCanvas().style.cursor = 'crosshair';
+    canvasEl.style.cursor = 'crosshair';
+    canvasEl.style.touchAction = 'none'; // stop the page panning/zooming under the finger
     map.dragPan.disable();
+    map.touchZoomRotate.disable();
+    map.dragRotate.disable();
+    map.doubleClickZoom.disable();
   }
   function cancelDraw() {
     drawing = false;
-    map.getCanvas().style.cursor = '';
+    canvasEl.style.cursor = '';
+    canvasEl.style.touchAction = '';
+    startPt = null;
+    drawPointerId = null;
     map.dragPan.enable();
+    map.touchZoomRotate.enable();
+    map.dragRotate.enable();
+    map.doubleClickZoom.enable();
   }
-  map.on('mousedown', (e) => {
+
+  const eventLngLat = (e) => {
+    const r = canvasEl.getBoundingClientRect();
+    return map.unproject([e.clientX - r.left, e.clientY - r.top]);
+  };
+
+  canvasEl.addEventListener('pointerdown', (e) => {
     if (!drawing) return;
-    startLngLat = e.lngLat;
+    e.preventDefault();
+    drawPointerId = e.pointerId;
+    startPt = { x: e.clientX, y: e.clientY };
+    startLngLat = eventLngLat(e);
+    try { canvasEl.setPointerCapture(e.pointerId); } catch { /* ignore */ }
   });
-  map.on('mousemove', (e) => {
-    if (!drawing || !startLngLat) return;
-    map.getSource('draw')?.setData(rectFeature(norm(startLngLat, e.lngLat)));
+
+  canvasEl.addEventListener('pointermove', (e) => {
+    if (!drawing || !startLngLat || e.pointerId !== drawPointerId) return;
+    e.preventDefault();
+    map.getSource('draw')?.setData(rectFeature(norm(startLngLat, eventLngLat(e))));
   });
-  map.on('mouseup', (e) => {
+
+  function finishDraw(e) {
     if (!drawing || !startLngLat) return;
-    box = norm(startLngLat, e.lngLat);
-    startLngLat = null;
+    const moved = startPt ? Math.hypot(e.clientX - startPt.x, e.clientY - startPt.y) : 0;
+    // a tap (no real drag) shouldn't create a degenerate box — keep drawing
+    if (moved < 12) {
+      startLngLat = null;
+      map.getSource('draw')?.setData(emptyFC());
+      return;
+    }
+    box = norm(startLngLat, eventLngLat(e));
     cancelDraw();
     map.getSource('draw')?.setData(rectFeature(box));
     onBox(box);
-  });
+  }
+  canvasEl.addEventListener('pointerup', finishDraw);
+  canvasEl.addEventListener('pointercancel', () => { startLngLat = null; drawPointerId = null; });
 
   // ---- overlays ----
   // Run fn once the style is ready (addSource throws otherwise).
