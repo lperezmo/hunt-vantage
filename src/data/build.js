@@ -170,10 +170,13 @@ export async function buildParcel(bbox, onProgress = () => {}) {
   const block = Math.max(1, Math.round(factor));
   for (let r = 0; r < gridH; r++) {
     const demSrcY = (pyn - originY) + (gridH === 1 ? 0 : (r * (pys - pyn)) / (gridH - 1));
-    const iy0 = Math.round((originY + demSrcY) * factor) - iOriginY;
+    // - block/2 centres the averaged block on the DEM sample. Without it the
+    // block's centre of mass sits half a DEM pixel south-east of the height
+    // sampled at the same grid cell, so terrain and canopy disagree.
+    const iy0 = Math.round((originY + demSrcY) * factor - block / 2) - iOriginY;
     for (let c = 0; c < gridW; c++) {
       const demSrcX = (pxw - originX) + (gridW === 1 ? 0 : (c * (pxe - pxw)) / (gridW - 1));
-      const ix0 = Math.round((originX + demSrcX) * factor) - iOriginX;
+      const ix0 = Math.round((originX + demSrcX) * factor - block / 2) - iOriginX;
       let sum = 0, n = 0;
       for (let j = 0; j < block; j++) {
         const yy = iy0 + j;
