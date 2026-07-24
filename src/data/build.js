@@ -6,21 +6,33 @@
 // Runs inside the analysis Web Worker (uses fetch + createImageBitmap + OffscreenCanvas).
 
 import {
-  TILE, lon2tile, lat2tile, mercPerPx, metersPerPx,
+  TILE, lon2tile, lat2tile, metersPerPx,
   decodeTerrarium, pickDemZoom,
 } from './geo.js';
 
 const tileUrl = (src, z, x, y) => `/api/tiles?src=${src}&z=${z}&x=${x}&y=${y}`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function fetchTileRGBA(src, z, x, y) {
-  const r = await fetch(tileUrl(src, z, x, y));
-  if (!r.ok) throw new Error(`tile ${src} ${z}/${x}/${y} -> ${r.status}`);
-  const bmp = await createImageBitmap(await r.blob());
-  const cv = new OffscreenCanvas(TILE, TILE);
-  const ctx = cv.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(bmp, 0, 0, TILE, TILE);
-  bmp.close();
-  return ctx.getImageData(0, 0, TILE, TILE).data; // Uint8ClampedArray RGBA
+// A run can need hundreds of tiles, so a single transient upstream failure must
+// not throw the whole parcel away. Retry with backoff, then give up on that one
+// tile and report it as a void for the caller to fill.
+async function fetchTileRGBA(src, z, x, y, tries = 3) {
+  for (let attempt = 0; attempt < tries; attempt++) {
+    if (attempt) await sleep(200 * 2 ** (attempt - 1));
+    try {
+      const r = await fetch(tileUrl(src, z, x, y));
+      if (!r.ok) throw new Error(`tile ${src} ${z}/${x}/${y} -> ${r.status}`);
+      const bmp = await createImageBitmap(await r.blob());
+      const cv = new OffscreenCanvas(TILE, TILE);
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(bmp, 0, 0, TILE, TILE);
+      bmp.close();
+      return ctx.getImageData(0, 0, TILE, TILE).data; // Uint8ClampedArray RGBA
+    } catch {
+      /* retry, then fall through to the void */
+    }
+  }
+  return null;
 }
 
 async function mapLimit(items, limit, fn, onTick) {
@@ -87,22 +99,41 @@ export async function buildParcel(bbox, onProgress = () => {}) {
   const demStitch = new Float32Array(SW * SH);
   const demTiles = [];
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) demTiles.push({ tx, ty });
+  const demVoids = [];
+  let demSum = 0, demCount = 0;
   await mapLimit(demTiles, 8, async ({ tx, ty }) => {
     const data = await fetchTileRGBA('dem', demZoom, tx, ty);
     const ox = (tx - tx0) * TILE, oy = (ty - ty0) * TILE;
+    if (!data) { demVoids.push({ ox, oy }); return; }
     for (let py = 0; py < TILE; py++) {
       for (let px = 0; px < TILE; px++) {
         const s = (py * TILE + px) * 4;
-        demStitch[(oy + py) * SW + (ox + px)] = decodeTerrarium(data[s], data[s + 1], data[s + 2]);
+        const h = decodeTerrarium(data[s], data[s + 1], data[s + 2]);
+        demStitch[(oy + py) * SW + (ox + px)] = h;
+        demSum += h;
       }
     }
+    demCount += TILE * TILE;
   }, (d, t) => onProgress(0.05 + 0.35 * (d / t), 'Fetching elevation…'));
+
+  if (!demCount) throw new Error('no elevation tiles could be fetched');
+  // Fill any void tile with the mean of what did arrive, so a dropped tile
+  // reads as flat ground rather than a sea-level pit that fakes a huge view.
+  if (demVoids.length) {
+    const fill = demSum / demCount;
+    for (const { ox, oy } of demVoids) {
+      for (let py = 0; py < TILE; py++) demStitch.fill(fill, (oy + py) * SW + ox, (oy + py) * SW + ox + TILE);
+    }
+  }
 
   const heights = new Float32Array(gridW * gridH);
   for (let r = 0; r < gridH; r++) {
-    const sy = (pyn - originY) + (gridH === 1 ? 0 : (r * (pys - pyn)) / (gridH - 1));
+    // -0.5 because raster sample i is measured at the centre of the pixel it
+    // covers, i.e. at tile-pixel position i + 0.5; without it the heightmap is
+    // shifted half a sample north-west of its own georeferencing.
+    const sy = (pyn - originY) + (gridH === 1 ? 0 : (r * (pys - pyn)) / (gridH - 1)) - 0.5;
     for (let c = 0; c < gridW; c++) {
-      const sx = (pxw - originX) + (gridW === 1 ? 0 : (c * (pxe - pxw)) / (gridW - 1));
+      const sx = (pxw - originX) + (gridW === 1 ? 0 : (c * (pxe - pxw)) / (gridW - 1)) - 0.5;
       heights[r * gridW + c] = sampleF(demStitch, SW, SH, sx, sy);
     }
   }
@@ -124,6 +155,7 @@ export async function buildParcel(bbox, onProgress = () => {}) {
   for (let ty = ity0; ty <= ity1; ty++) for (let tx = itx0; tx <= itx1; tx++) imgTiles.push({ tx, ty });
   await mapLimit(imgTiles, 6, async ({ tx, ty }) => {
     const data = await fetchTileRGBA('img', imgZoom, tx, ty);
+    if (!data) return; // void imagery stays black, which classifies as no canopy
     const ox = (tx - itx0) * TILE, oy = (ty - ity0) * TILE;
     for (let py = 0; py < TILE; py++) {
       const dst = ((oy + py) * ISW + ox) * 4;
@@ -193,6 +225,9 @@ export async function buildParcel(bbox, onProgress = () => {}) {
   return {
     gridW, gridH, heights, forest,
     metersPerPx: mpp, lat: latC, demZoom, imgZoom,
+    // mercator pixel y of the north/south grid edges: rows are evenly spaced
+    // here, not in latitude, so georeferencing a row needs these.
+    pyn, pys,
     bbox, texBitmap, texW, texH,
   };
 }

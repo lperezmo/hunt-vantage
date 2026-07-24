@@ -9,7 +9,7 @@ function tileProxyPlugin() {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         if (req.url && req.url.startsWith('/api/tiles')) {
-          proxyTile(req.url, res).catch(() => {
+          proxyTile(req, res).catch(() => {
             res.statusCode = 502;
             res.end('proxy error');
           });

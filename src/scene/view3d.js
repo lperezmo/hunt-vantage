@@ -5,7 +5,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let renderer, raf, controls;
+// The scene is module-level so disposeViewer can walk it: renderer.dispose()
+// releases the context's own resources but not the geometries, materials or
+// textures uploaded through it, and a parcel mesh plus its drape texture are
+// several tens of MB of GPU memory per open.
+let renderer, raf, controls, scene;
 
 export function openViewer(canvas, result, spot) {
   disposeViewer();
@@ -14,7 +18,7 @@ export function openViewer(canvas, result, spot) {
   const W = (gridW - 1) * metersPerPx;
   const H = (gridH - 1) * metersPerPx;
 
-  const scene = new THREE.Scene();
+  scene = new THREE.Scene();
   scene.background = new THREE.Color(0x8fb4d6);
   scene.fog = new THREE.Fog(0x8fb4d6, W * 0.9, W * 3.2);
 
@@ -92,6 +96,7 @@ export function openViewer(canvas, result, spot) {
   renderer._onResize = onResize;
 
   const loop = () => {
+    if (!renderer || !scene) return; // disposed between frames
     raf = requestAnimationFrame(loop);
     controls.update();
     renderer.render(scene, camera);
@@ -149,6 +154,18 @@ export function disposeViewer() {
   if (raf) cancelAnimationFrame(raf);
   raf = null;
   if (controls) { controls.dispose(); controls = null; }
+  if (scene) {
+    scene.traverse((obj) => {
+      obj.geometry?.dispose();
+      const mats = Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : [];
+      for (const m of mats) {
+        m.map?.dispose();
+        m.dispose();
+      }
+    });
+    scene.clear();
+    scene = null;
+  }
   if (renderer) {
     if (renderer._onResize) window.removeEventListener('resize', renderer._onResize);
     renderer.dispose();

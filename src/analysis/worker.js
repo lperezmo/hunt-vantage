@@ -6,8 +6,10 @@ import { buildParcel } from '../data/build.js';
 import { analyze } from './score.js';
 
 self.onmessage = async (e) => {
-  const { bbox, ui } = e.data;
-  const post = (pct, label) => self.postMessage({ type: 'progress', pct, label });
+  const { bbox, ui, runId } = e.data;
+  // runId is echoed on every message so the main thread can drop results from
+  // a run the user has since cleared or superseded.
+  const post = (pct, label) => self.postMessage({ type: 'progress', pct, label, runId });
 
   try {
     const parcel = await buildParcel(bbox, (pct, label) => post(pct, label));
@@ -23,8 +25,8 @@ self.onmessage = async (e) => {
     result.texH = parcel.texH;
     if (parcel.texBitmap) transfer.push(parcel.texBitmap);
 
-    self.postMessage({ type: 'result', result }, transfer);
+    self.postMessage({ type: 'result', result, runId }, transfer);
   } catch (err) {
-    self.postMessage({ type: 'error', message: err?.message || String(err) });
+    self.postMessage({ type: 'error', message: err?.message || String(err), runId });
   }
 };
