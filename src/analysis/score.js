@@ -3,8 +3,16 @@
 // factors (edge habitat, high ground, sun/aspect, wind discipline, concealment).
 
 import { observeScore, observeFootprint } from './viewshed.js';
+import { TILE, tile2lat } from '../data/geo.js';
 
 const TREE_HEIGHT = 16; // metres of mature canopy
+
+// Length over which a full open-to-closed canopy swing saturates the edge
+// score. Turning the raw two-cell difference into a per-metre gradient makes
+// `edge` independent of DEM zoom and of the grid border (where the difference
+// spans one cell, not two); 66 m reproduces the previous tuning at the ~15 m
+// samples a default-sized parcel uses.
+const EDGE_GRADIENT_REF_M = 66;
 
 // Effective sight-blocking canopy height for a tree-density 0..1. Density-gated
 // so open ground and sparse/scattered cover stay see-through (you glass across
@@ -14,7 +22,11 @@ function effectiveCanopy(density) {
   return t * t * TREE_HEIGHT;
 }
 
-const SUN_AZ = { dawn: 90, midday: 180, dusk: 270 }; // sun-favoured aspect
+// Sun-favoured aspect. The sun still rises east and sets west below the
+// equator, but midday sun there comes from the north, so a southern-hemisphere
+// parcel must reward north-facing slopes at midday.
+const SUN_AZ = { dawn: 90, midday: 180, dusk: 270 };
+const SUN_AZ_SOUTH = { dawn: 90, midday: 0, dusk: 270 };
 const SUN_TEXT = {
   dawn: 'catches the morning sun',
   midday: 'well-lit through midday',
@@ -37,10 +49,10 @@ function deriveLayers(parcel) {
       const i = r * gridW + c;
       const cl = Math.max(c - 1, 0), cr = Math.min(c + 1, gridW - 1);
       const ru = Math.max(r - 1, 0), rd = Math.min(r + 1, gridH - 1);
-      // forest-density gradient -> edge strength
-      const fgx = (forest[r * gridW + cr] - forest[r * gridW + cl]) / 255;
-      const fgy = (forest[rd * gridW + c] - forest[ru * gridW + c]) / 255;
-      edge[i] = Math.min(1, Math.hypot(fgx, fgy) * 2.2);
+      // forest-density gradient (per metre) -> edge strength
+      const fgx = (forest[r * gridW + cr] - forest[r * gridW + cl]) / 255 / ((cr - cl) * metersPerPx);
+      const fgy = (forest[rd * gridW + c] - forest[ru * gridW + c]) / 255 / ((rd - ru) * metersPerPx);
+      edge[i] = Math.min(1, Math.hypot(fgx, fgy) * EDGE_GRADIENT_REF_M);
       // terrain aspect (downhill compass azimuth)
       const dzx = (heights[r * gridW + cr] - heights[r * gridW + cl]) / ((cr - cl) * metersPerPx);
       const dzy = (heights[rd * gridW + c] - heights[ru * gridW + c]) / ((rd - ru) * metersPerPx);
@@ -80,7 +92,7 @@ function normalize(arr) {
 }
 
 export function analyze(parcel, ui) {
-  const { gridW, gridH, heights, forest, metersPerPx, bbox } = parcel;
+  const { gridW, gridH, heights, forest, metersPerPx, bbox, pyn, pys, demZoom } = parcel;
   const { zc, edge, aspect, localMean } = deriveLayers(parcel);
   const g = { gridW, gridH, heights, zc, edge, metersPerPx };
 
@@ -99,7 +111,9 @@ export function analyze(parcel, ui) {
     windBlowX = Math.sin(rad);   // +x = east
     windBlowY = -Math.cos(rad);  // +y = south (grid down)
   }
-  const sunAz = SUN_AZ[ui.huntTime] ?? 180;
+  const southern = (bbox.north + bbox.south) / 2 < 0;
+  const sunTable = southern ? SUN_AZ_SOUTH : SUN_AZ;
+  const sunAz = sunTable[ui.huntTime] ?? (southern ? 0 : 180);
 
   const p = {
     eyeHeight: ui.eyeHeight,
@@ -139,6 +153,7 @@ export function analyze(parcel, ui) {
   }
 
   const nVis = normalize(visA), nEdge = normalize(edgeA), nProm = normalize(promA);
+  const nCon = normalize(conA);
   const score = new Float32Array(cgW * cgH);
   for (let i = 0; i < score.length; i++) {
     score[i] =
@@ -147,7 +162,7 @@ export function analyze(parcel, ui) {
       w.prom * nProm(promA[i]) +
       w.sun * sunA[i] +
       w.wind * windA[i] +
-      w.con * Math.min(1, conA[i] * 1.5);
+      w.con * nCon(conA[i]);
   }
 
   // non-maximum suppression -> distinct top spots
@@ -169,8 +184,16 @@ export function analyze(parcel, ui) {
   }
 
   // detail pass on the winners: footprint + reasons
+  // Grid columns are evenly spaced in longitude, but rows are evenly spaced in
+  // web-mercator pixel y (see buildParcel), which is nonlinear in latitude, so
+  // a row is georeferenced through the mercator inverse and not by lerping
+  // between north and south. Both take fractional / out-of-range values so the
+  // overlay extents below can be expressed in the same grid coordinates.
   const lon = (col) => bbox.west + (gridW <= 1 ? 0 : (col / (gridW - 1)) * (bbox.east - bbox.west));
-  const lat = (row) => bbox.north + (gridH <= 1 ? 0 : (row / (gridH - 1)) * (bbox.south - bbox.north));
+  const lat = (row) =>
+    gridH <= 1
+      ? bbox.north
+      : tile2lat((pyn + (row * (pys - pyn)) / (gridH - 1)) / TILE, demZoom);
   const sMin = picked.length ? picked[picked.length - 1].s : 0;
   const sMax = picked.length ? picked[0].s : 1;
 
@@ -189,7 +212,7 @@ export function analyze(parcel, ui) {
       { k: 'prom', v: w.prom * nProm(promA[pk.idx]), t: prom > 2 ? `sits ${Math.round(prom)} m above the local terrain` : 'reads the terrain well' },
       { k: 'sun', v: w.sun * sunA[pk.idx], t: SUN_TEXT[ui.huntTime] },
       { k: 'wind', v: windOn ? w.wind * windA[pk.idx] : 0, t: 'keeps your scent off the prime habitat' },
-      { k: 'con', v: w.con * Math.min(1, conA[pk.idx] * 1.5), t: 'tucked into edge cover so you stay hidden' },
+      { k: 'con', v: w.con * nCon(conA[pk.idx]), t: 'tucked into edge cover so you stay hidden' },
     ].filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
 
     const why = capitalize(contrib.slice(0, 3).map((x) => x.t).join(' · '));
@@ -213,13 +236,29 @@ export function analyze(parcel, ui) {
   const heat = new Float32Array(score.length);
   for (let i = 0; i < score.length; i++) heat[i] = nScore(score[i]);
 
+  // Extents for the canvas overlays. A raster pixel's CENTRE is what carries
+  // its sample, so a cgW x cgH heat canvas whose samples sit on grid columns
+  // 0, stride, 2*stride ... must be stretched half a candidate cell past the
+  // outermost samples, not fitted to the bbox. Fitting it to the bbox both
+  // shifted the heat half a cell and stretched it over the gap between the
+  // last sampled column and the bbox edge.
+  const heatBbox = {
+    west: lon(-0.5 * stride), east: lon((cgW - 0.5) * stride),
+    north: lat(-0.5 * stride), south: lat((cgH - 0.5) * stride),
+  };
+  // Same logic for the full-resolution footprint canvas (one pixel per sample).
+  const gridBbox = {
+    west: lon(-0.5), east: lon(gridW - 0.5),
+    north: lat(-0.5), south: lat(gridH - 0.5),
+  };
+
   return {
     gridW, gridH, cgW, cgH, stride,
-    bbox, metersPerPx,
+    bbox, heatBbox, gridBbox, metersPerPx,
     heat, spots,
     // raw layers returned so the 3D view can reuse them
     heights, forest,
-    demZoom: parcel.demZoom,
+    demZoom,
   };
 }
 

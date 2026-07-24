@@ -20,7 +20,7 @@ No API keys. Everything runs on free, keyless data:
 ## How it works
 
 1. You draw the ground. Search to a location, then drag a rectangle over it
-   (soft cap about 30 sq km).
+   (capped at 30 sq km; larger boxes are refused).
 2. The app builds the parcel. A Web Worker fetches elevation and imagery tiles,
    decodes a metric heightmap, and classifies a tree-density mask
    (slope-suppressed so cliffs do not read as forest).
@@ -78,8 +78,8 @@ function.
 ## Acknowledgements
 
 - Built with the help of Claude Opus 4.8 (Anthropic), running in Claude Code. The
-  data pipeline, viewshed engine, scoring, UI, tests, and deployment were all
-  produced in that session.
+  data pipeline, viewshed engine, scoring, UI, and deployment were all produced
+  in that session.
 - Based on and inspired by
   [ode-to-yosemite](https://github.com/shlokkhemani/ode-to-yosemite) by Shlok
   Khemani. The keyless terrain and satellite tile pipeline, the Terrarium

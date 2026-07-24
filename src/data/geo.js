@@ -23,13 +23,22 @@ export const decodeTerrarium = (r, g, b) => r * 256 + g + b / 256 - 32768;
 
 // Pick the DEM zoom so the cropped grid stays under `maxGrid` samples per side.
 // Bigger parcels drop to a coarser zoom; small parcels get finer detail.
+// If nothing in [min, max] fits, keep dropping below `min` rather than
+// returning `min` with an unbounded grid: a huge bbox must never turn into a
+// multi-gigabyte allocation or a tile-fetch storm.
 export function pickDemZoom(bbox, { maxGrid = 420, min = 12, max = 15 } = {}) {
-  for (let z = max; z >= min; z--) {
+  const gridSide = (z) => {
     const w = (lon2tile(bbox.east, z) - lon2tile(bbox.west, z)) * TILE;
     const h = (lat2tile(bbox.south, z) - lat2tile(bbox.north, z)) * TILE;
-    if (Math.max(w, h) <= maxGrid) return z;
+    return Math.max(w, h);
+  };
+  for (let z = max; z >= min; z--) {
+    if (gridSide(z) <= maxGrid) return z;
   }
-  return min;
+  for (let z = min - 1; z >= 0; z--) {
+    if (gridSide(z) <= maxGrid) return z;
+  }
+  return 0;
 }
 
 // Rough area of a bbox in km², for the soft size cap.

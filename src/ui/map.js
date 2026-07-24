@@ -151,7 +151,9 @@ export function setupMap(onBox) {
       img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = a;
     }
     ctx.putImageData(img, 0, 0);
-    ensureOverlay('heat', heatCanvas, result.bbox);
+    // heatBbox, not bbox: the canvas pixel centres carry the samples, so the
+    // overlay reaches half a candidate cell past the outermost ones.
+    ensureOverlay('heat', heatCanvas, result.heatBbox || result.bbox);
     if (map.getLayer('draw-fill')) map.moveLayer('draw-line'); // keep box on top
   }
 
@@ -166,7 +168,7 @@ export function setupMap(onBox) {
       if (fp[i]) { img.data[i * 4] = 150; img.data[i * 4 + 1] = 225; img.data[i * 4 + 2] = 255; img.data[i * 4 + 3] = 150; }
     }
     ctx.putImageData(img, 0, 0);
-    ensureOverlay('fp', fpCanvas, result.bbox);
+    ensureOverlay('fp', fpCanvas, result.gridBbox || result.bbox);
     if (map.getLayer('draw-line')) map.moveLayer('draw-line');
   }
 
@@ -195,6 +197,9 @@ export function setupMap(onBox) {
 
   function clearAll() {
     box = null;
+    // Clearing mid-draw must also hand the map's gestures back: otherwise
+    // dragPan and friends stay disabled and the map cannot be panned again.
+    cancelDraw();
     clearMarkers();
     map.getSource('draw')?.setData(emptyFC());
     for (const id of ['heat', 'fp']) {
@@ -203,23 +208,29 @@ export function setupMap(onBox) {
     }
   }
 
+  // Resolves to { ok: true } or { ok: false, reason }. Nominatim answers a
+  // throttled caller with an HTML 403/429 body, so the response status has to
+  // be checked before parsing, or "rate limited" reads as "no such place" and
+  // the user retries into a harder block.
   async function geocode(q) {
     const m = q.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
-    if (m) { const lat = +m[1], lon = +m[2]; map.flyTo({ center: [lon, lat], zoom: 14 }); return true; }
+    if (m) { const lat = +m[1], lon = +m[2]; map.flyTo({ center: [lon, lat], zoom: 14 }); return { ok: true }; }
     try {
       const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, {
         headers: { 'Accept-Language': 'en' },
       });
+      if (r.status === 429 || r.status === 403) return { ok: false, reason: 'rate-limited' };
+      if (!r.ok) return { ok: false, reason: 'error' };
       const data = await r.json();
-      if (!data.length) return false;
+      if (!Array.isArray(data) || !data.length) return { ok: false, reason: 'not-found' };
       const { lat, lon, boundingbox } = data[0];
       if (boundingbox) {
         map.fitBounds([[+boundingbox[2], +boundingbox[0]], [+boundingbox[3], +boundingbox[1]]], { maxZoom: 14, padding: 40 });
       } else {
         map.flyTo({ center: [+lon, +lat], zoom: 14 });
       }
-      return true;
-    } catch { return false; }
+      return { ok: true };
+    } catch { return { ok: false, reason: 'error' }; }
   }
 
   function setBox(b, { fit = true } = {}) {
