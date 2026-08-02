@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lperezmo/hunt-vantage/master/assets/logo.svg" alt="Hunt Vantage" width="400">
+</p>
+
 # Hunt Vantage
 
 Find the best glassing and stand spots for any hunting ground. Draw a box on the
