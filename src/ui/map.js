@@ -1,7 +1,10 @@
 // MapLibre map: satellite basemap, geocode search, rectangle drawing, and the
 // result overlays (vantage heatmap + selected-spot viewshed footprint + pins).
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import mapWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+maplibregl.setWorkerUrl(mapWorkerUrl);
 
 const SAT_STYLE = {
   version: 8,
