@@ -14,7 +14,7 @@ let renderer, raf, controls, scene;
 export function openViewer(canvas, result, spot) {
   disposeViewer();
 
-  const { gridW, gridH, heights, metersPerPx, forest } = result;
+  const { gridW, gridH, heights, metersPerPx } = result;
   const W = (gridW - 1) * metersPerPx;
   const H = (gridH - 1) * metersPerPx;
 

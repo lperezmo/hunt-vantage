@@ -48,13 +48,16 @@ hunting partner and it re-runs on open.
 
 ## Run locally
 
+Needs [Bun](https://bun.com) 1.4 or newer.
+
 ```sh
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
-Then open the printed localhost URL. `npm run build` produces the static site in
-`dist/`. The `/api/tiles` proxy runs as a Vercel serverless function in
+Then open the printed localhost URL. `bun run build` produces the static site in
+`dist/`. Vite is still the dev server and bundler; the scripts run it on the Bun
+runtime. The `/api/tiles` proxy runs as a Vercel serverless function in
 production and as Vite dev middleware locally (see `vite.config.js`), so behavior
 is identical in both.
 
@@ -62,8 +65,14 @@ is identical in both.
 
 This repo is connected to Vercel, so pushing to `master` deploys automatically.
 To set it up fresh: import the repo into Vercel (framework preset Vite), or run
-`vercel` from the repo root. `vercel.json` pins the build and the tile-proxy
-function.
+`vercel` from the repo root. `vercel.json` pins the install
+(`bun install --frozen-lockfile`), the build and the tile-proxy function.
+
+## Checks
+
+`bun run check` runs the formatter, the linter and the build. `bun fmt` and
+`bun lint` only exist on Bun canary for now (`bun upgrade --canary`), so CI runs
+them on canary and keeps the build job on the pinned Bun release.
 
 ## Caveats
 
