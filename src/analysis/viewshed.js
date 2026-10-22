@@ -20,15 +20,21 @@ export function observeScore(g, ox, oy, p) {
   const nRays = p.rays;
   const wantWind = p.windBlowX !== 0 || p.windBlowY !== 0;
 
-  let visArea = 0, edgeVis = 0, windDot = 0, cells = 0;
+  let visArea = 0,
+    edgeVis = 0,
+    windDot = 0,
+    cells = 0;
 
   for (let a = 0; a < nRays; a++) {
     const ang = (a / nRays) * TWO_PI;
-    const dx = Math.cos(ang), dy = Math.sin(ang);
+    const dx = Math.cos(ang),
+      dy = Math.sin(ang);
     let maxSlope = -Infinity;
     for (let t = 1; t <= rangeCells; t++) {
-      const fx = ox + dx * t, fy = oy + dy * t;
-      const ix = fx | 0, iy = fy | 0;
+      const fx = ox + dx * t,
+        fy = oy + dy * t;
+      const ix = fx | 0,
+        iy = fy | 0;
       if (ix < 0 || iy < 0 || ix >= gridW || iy >= gridH) break;
       const idx = iy * gridW + ix;
       const dist = t * metersPerPx;
@@ -51,7 +57,8 @@ export function observeScore(g, ox, oy, p) {
     }
   }
 
-  const windScore = wantWind && visArea > 0 ? Math.min(1, Math.max(0, (windDot / visArea + 1) / 2)) : 0.5;
+  const windScore =
+    wantWind && visArea > 0 ? Math.min(1, Math.max(0, (windDot / visArea + 1) / 2)) : 0.5;
   return { visArea, edgeVis, windDot, cells, windScore };
 }
 
@@ -68,17 +75,25 @@ export function observeFootprint(g, ox, oy, p) {
   const vis = new Uint8Array(gridW * gridH);
   const rc = Math.ceil(rangeCells);
 
-  let seen = 0, inDisc = 0;
-  const c0 = Math.max(0, ox - rc), c1 = Math.min(gridW - 1, ox + rc);
-  const r0 = Math.max(0, oy - rc), r1 = Math.min(gridH - 1, oy + rc);
+  let seen = 0,
+    inDisc = 0;
+  const c0 = Math.max(0, ox - rc),
+    c1 = Math.min(gridW - 1, ox + rc);
+  const r0 = Math.max(0, oy - rc),
+    r1 = Math.min(gridH - 1, oy + rc);
 
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
-      const ddx = c - ox, ddy = r - oy;
+      const ddx = c - ox,
+        ddy = r - oy;
       const d2 = ddx * ddx + ddy * ddy;
       if (d2 > r2) continue;
       inDisc++;
-      if (d2 === 0) { vis[r * gridW + c] = 1; seen++; continue; }
+      if (d2 === 0) {
+        vis[r * gridW + c] = 1;
+        seen++;
+        continue;
+      }
 
       const targetDist = Math.sqrt(d2);
       const steps = Math.max(1, Math.round(targetDist));
@@ -90,13 +105,20 @@ export function observeFootprint(g, ox, oy, p) {
       for (let s = 1; s < steps; s++) {
         const fx = ox + (ddx * s) / steps;
         const fy = oy + (ddy * s) / steps;
-        const ix = fx | 0, iy = fy | 0;
+        const ix = fx | 0,
+          iy = fy | 0;
         const od = Math.hypot(ix - ox, iy - oy);
         if (od < 0.5 || od >= targetDist - 0.5) continue;
         const occSlope = (zc[iy * gridW + ix] - eyeZ) / (od * metersPerPx);
-        if (occSlope > targetSlope + 1e-6) { blocked = true; break; }
+        if (occSlope > targetSlope + 1e-6) {
+          blocked = true;
+          break;
+        }
       }
-      if (!blocked) { vis[r * gridW + c] = 1; seen++; }
+      if (!blocked) {
+        vis[r * gridW + c] = 1;
+        seen++;
+      }
     }
   }
   return { vis, seen, visiblePercent: inDisc ? seen / inDisc : 0 };

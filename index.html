@@ -2,8 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="Find the best hunting vantage points for any ground - real elevation, satellite tree cover, and a line-of-sight viewshed analysis." />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="Find the best hunting vantage points for any ground - real elevation, satellite tree cover, and a line-of-sight viewshed analysis."
+    />
     <title>Hunt Vantage - best glassing & stand spots</title>
   </head>
   <body>
@@ -16,14 +22,21 @@
       </header>
 
       <div class="search-row">
-        <input id="search" type="text" placeholder="Search a place, address, or lat,lng" autocomplete="off" />
+        <input
+          id="search"
+          type="text"
+          placeholder="Search a place, address, or lat,lng"
+          autocomplete="off"
+        />
         <button id="search-btn" title="Search">Go</button>
       </div>
 
       <div class="step">
         <button id="draw-btn" class="primary">Draw hunting area</button>
         <button id="clear-btn" class="ghost" hidden>Clear</button>
-        <p class="hint" id="draw-hint">Tap “Draw hunting area”, then drag a box across your ground.</p>
+        <p class="hint" id="draw-hint">
+          Tap “Draw hunting area”, then drag a box across your ground.
+        </p>
       </div>
 
       <button id="analyze-btn" class="primary big" disabled>Find best vantage points</button>
@@ -35,23 +48,30 @@
 
       <details id="settings">
         <summary>Tune the analysis</summary>
-        <label class="fld">Hunt time
+        <label class="fld"
+          >Hunt time
           <select id="hunt-time">
             <option value="dawn">Morning (sun low E)</option>
             <option value="midday">Midday</option>
             <option value="dusk">Evening (sun low W)</option>
           </select>
         </label>
-        <label class="fld">Prevailing wind (from)
+        <label class="fld"
+          >Prevailing wind (from)
           <select id="wind-dir">
             <option value="-1">Ignore wind</option>
-            <option value="0">N</option><option value="45">NE</option>
-            <option value="90">E</option><option value="135">SE</option>
-            <option value="180">S</option><option value="225">SW</option>
-            <option value="270">W</option><option value="315">NW</option>
+            <option value="0">N</option>
+            <option value="45">NE</option>
+            <option value="90">E</option>
+            <option value="135">SE</option>
+            <option value="180">S</option>
+            <option value="225">SW</option>
+            <option value="270">W</option>
+            <option value="315">NW</option>
           </select>
         </label>
-        <label class="fld">Glassing range
+        <label class="fld"
+          >Glassing range
           <select id="range">
             <option value="400">400 m</option>
             <option value="600" selected>600 m</option>
@@ -59,7 +79,8 @@
             <option value="1400">1400 m</option>
           </select>
         </label>
-        <label class="fld">Eye height
+        <label class="fld"
+          >Eye height
           <select id="eye">
             <option value="1.7">Standing (1.7 m)</option>
             <option value="5">Tree stand (5 m)</option>
@@ -67,19 +88,34 @@
           </select>
         </label>
         <p class="wt-title">Weights</p>
-        <label class="slider">Visibility <input type="range" id="w-vis" min="0" max="100" value="35" /></label>
-        <label class="slider">Edge habitat <input type="range" id="w-edge" min="0" max="100" value="20" /></label>
-        <label class="slider">High ground <input type="range" id="w-prom" min="0" max="100" value="15" /></label>
-        <label class="slider">Sun / aspect <input type="range" id="w-sun" min="0" max="100" value="10" /></label>
-        <label class="slider">Wind discipline <input type="range" id="w-wind" min="0" max="100" value="15" /></label>
-        <label class="slider">Concealment <input type="range" id="w-con" min="0" max="100" value="5" /></label>
+        <label class="slider"
+          >Visibility <input type="range" id="w-vis" min="0" max="100" value="35"
+        /></label>
+        <label class="slider"
+          >Edge habitat <input type="range" id="w-edge" min="0" max="100" value="20"
+        /></label>
+        <label class="slider"
+          >High ground <input type="range" id="w-prom" min="0" max="100" value="15"
+        /></label>
+        <label class="slider"
+          >Sun / aspect <input type="range" id="w-sun" min="0" max="100" value="10"
+        /></label>
+        <label class="slider"
+          >Wind discipline <input type="range" id="w-wind" min="0" max="100" value="15"
+        /></label>
+        <label class="slider"
+          >Concealment <input type="range" id="w-con" min="0" max="100" value="5"
+        /></label>
       </details>
 
       <div id="results"></div>
 
       <footer>
         <p class="attr">Elevation: Mapzen/AWS Terrain Tiles. Imagery: Esri World Imagery.</p>
-        <p class="disc">Models sightlines only - not legal hours, property lines, or safe backstops. Hunt responsibly.</p>
+        <p class="disc">
+          Models sightlines only - not legal hours, property lines, or safe backstops. Hunt
+          responsibly.
+        </p>
       </footer>
     </div>
 

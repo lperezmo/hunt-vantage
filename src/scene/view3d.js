@@ -14,7 +14,7 @@ let renderer, raf, controls, scene;
 export function openViewer(canvas, result, spot) {
   disposeViewer();
 
-  const { gridW, gridH, heights, metersPerPx, forest } = result;
+  const { gridW, gridH, heights, metersPerPx } = result;
   const W = (gridW - 1) * metersPerPx;
   const H = (gridH - 1) * metersPerPx;
 
@@ -22,7 +22,12 @@ export function openViewer(canvas, result, spot) {
   scene.background = new THREE.Color(0x8fb4d6);
   scene.fog = new THREE.Fog(0x8fb4d6, W * 0.9, W * 3.2);
 
-  const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight || 1.6, 1, 60000);
+  const camera = new THREE.PerspectiveCamera(
+    60,
+    canvas.clientWidth / canvas.clientHeight || 1.6,
+    1,
+    60000,
+  );
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -37,7 +42,8 @@ export function openViewer(canvas, result, spot) {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(gridW * gridH * 3);
   const uv = new Float32Array(gridW * gridH * 2);
-  const halfW = W / 2, halfH = H / 2;
+  const halfW = W / 2,
+    halfH = H / 2;
   for (let r = 0; r < gridH; r++) {
     for (let c = 0; c < gridW; c++) {
       const i = r * gridW + c;
@@ -57,7 +63,11 @@ export function openViewer(canvas, result, spot) {
   }
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
-  geo.setIndex(gridW * gridH > 65000 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
+  geo.setIndex(
+    gridW * gridH > 65000
+      ? new THREE.Uint32BufferAttribute(idx, 1)
+      : new THREE.Uint16BufferAttribute(idx, 1),
+  );
   geo.computeVertexNormals();
 
   const texture = buildTexture(result, spot);
@@ -68,17 +78,17 @@ export function openViewer(canvas, result, spot) {
   const vWorld = new THREE.Vector3(
     spot.ox * metersPerPx - halfW,
     heights[spot.oy * gridW + spot.ox],
-    spot.oy * metersPerPx - halfH
+    spot.oy * metersPerPx - halfH,
   );
   const marker = new THREE.Mesh(
     new THREE.ConeGeometry(Math.max(8, W * 0.012), Math.max(28, W * 0.04), 4),
-    new THREE.MeshBasicMaterial({ color: 0xb6e06a })
+    new THREE.MeshBasicMaterial({ color: 0xb6e06a }),
   );
   marker.position.copy(vWorld).y += Math.max(28, W * 0.04) / 2 + 6;
   scene.add(marker);
   const stem = new THREE.Mesh(
     new THREE.CylinderGeometry(1.5, 1.5, Math.max(28, W * 0.04), 6),
-    new THREE.MeshBasicMaterial({ color: 0x15200a })
+    new THREE.MeshBasicMaterial({ color: 0x15200a }),
   );
   stem.position.copy(vWorld).y += Math.max(28, W * 0.04) / 2 + 6;
   scene.add(stem);
@@ -118,7 +128,8 @@ function buildTexture(result, spot) {
   const tw = texBitmap ? texW : gridW;
   const th = texBitmap ? texH : gridH;
   const cv = document.createElement('canvas');
-  cv.width = tw; cv.height = th;
+  cv.width = tw;
+  cv.height = th;
   const ctx = cv.getContext('2d');
   if (texBitmap) {
     ctx.drawImage(texBitmap, 0, 0);
@@ -127,18 +138,27 @@ function buildTexture(result, spot) {
     const img = ctx.createImageData(gridW, gridH);
     for (let i = 0; i < gridW * gridH; i++) {
       const f = result.forest[i] / 255;
-      img.data[i * 4] = 90 - f * 40; img.data[i * 4 + 1] = 110 + f * 70; img.data[i * 4 + 2] = 70; img.data[i * 4 + 3] = 255;
+      img.data[i * 4] = 90 - f * 40;
+      img.data[i * 4 + 1] = 110 + f * 70;
+      img.data[i * 4 + 2] = 70;
+      img.data[i * 4 + 3] = 255;
     }
     ctx.putImageData(img, 0, 0);
   }
   // overlay footprint (scaled from grid res to texture res)
   const fp = spot.footprint;
   const ov = document.createElement('canvas');
-  ov.width = gridW; ov.height = gridH;
+  ov.width = gridW;
+  ov.height = gridH;
   const octx = ov.getContext('2d');
   const oimg = octx.createImageData(gridW, gridH);
   for (let i = 0; i < fp.length; i++) {
-    if (fp[i]) { oimg.data[i * 4] = 120; oimg.data[i * 4 + 1] = 220; oimg.data[i * 4 + 2] = 255; oimg.data[i * 4 + 3] = 90; }
+    if (fp[i]) {
+      oimg.data[i * 4] = 120;
+      oimg.data[i * 4 + 1] = 220;
+      oimg.data[i * 4 + 2] = 255;
+      oimg.data[i * 4 + 3] = 90;
+    }
   }
   octx.putImageData(oimg, 0, 0);
   ctx.imageSmoothingEnabled = true;
@@ -153,7 +173,10 @@ function buildTexture(result, spot) {
 export function disposeViewer() {
   if (raf) cancelAnimationFrame(raf);
   raf = null;
-  if (controls) { controls.dispose(); controls = null; }
+  if (controls) {
+    controls.dispose();
+    controls = null;
+  }
   if (scene) {
     scene.traverse((obj) => {
       obj.geometry?.dispose();

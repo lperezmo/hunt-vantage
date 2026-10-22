@@ -16,7 +16,6 @@ let worker = spawnWorker();
 
 let lastResult = null;
 let panelCtl = null;
-let selectedRank = null;
 let running = false;
 // Bumped on every start and on Clear, so results from a discarded run are
 // ignored instead of repainting the map for a bbox the user threw away.
@@ -61,7 +60,9 @@ async function doSearch() {
   }
 }
 $('search-btn').addEventListener('click', doSearch);
-$('search').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+$('search').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doSearch();
+});
 
 // ---- draw (toggle: tap again to cancel) ----
 $('draw-btn').addEventListener('click', () => {
@@ -76,17 +77,21 @@ $('draw-btn').addEventListener('click', () => {
   document.body.classList.add('drawing'); // collapses the sidebar on mobile for room
   $('draw-btn').classList.add('active');
   $('draw-btn').textContent = 'Cancel drawing';
-  $('draw-hint').textContent = 'Drag a box across your ground - press and drag on the map (touch works).';
+  $('draw-hint').textContent =
+    'Drag a box across your ground - press and drag on the map (touch works).';
 });
 $('clear-btn').addEventListener('click', () => {
   runId += 1; // any in-flight run now belongs to a discarded box
   // Tear the worker down as well as ignoring its output: otherwise it keeps
   // fetching tiles for the discarded box and the next run queues behind it.
-  if (running) { worker.terminate(); worker = spawnWorker(); }
+  if (running) {
+    worker.terminate();
+    worker = spawnWorker();
+  }
   running = false;
   map.clearAll();
   endDrawUi();
-  lastResult = null; selectedRank = null;
+  lastResult = null;
   $('results').innerHTML = '';
   $('analyze-btn').disabled = true;
   $('clear-btn').hidden = true;
@@ -102,8 +107,12 @@ function readUi() {
     maxRange: Number($('range').value),
     eyeHeight: Number($('eye').value),
     weights: {
-      vis: +$('w-vis').value, edge: +$('w-edge').value, prom: +$('w-prom').value,
-      sun: +$('w-sun').value, wind: +$('w-wind').value, con: +$('w-con').value,
+      vis: +$('w-vis').value,
+      edge: +$('w-edge').value,
+      prom: +$('w-prom').value,
+      sun: +$('w-sun').value,
+      wind: +$('w-wind').value,
+      con: +$('w-con').value,
     },
   };
 }
@@ -126,7 +135,10 @@ function runAnalysis(box) {
   setProgress(0.02, 'Starting…');
   // reflect the area in a shareable URL
   const u = new URL(location.href);
-  u.searchParams.set('bbox', [box.west, box.south, box.east, box.north].map((v) => v.toFixed(5)).join(','));
+  u.searchParams.set(
+    'bbox',
+    [box.west, box.south, box.east, box.north].map((v) => v.toFixed(5)).join(','),
+  );
   history.replaceState(null, '', u);
   worker.postMessage({ bbox: box, ui: readUi(), runId });
 }
@@ -146,7 +158,9 @@ function onWorkerMessage(e) {
   } else if (msg.type === 'result') {
     running = false;
     $('analyze-btn').disabled = false;
-    setTimeout(() => { $('progress').hidden = true; }, 400);
+    setTimeout(() => {
+      $('progress').hidden = true;
+    }, 400);
     lastResult = msg.result;
     map.showHeatmap(lastResult);
     map.addMarkers(lastResult.spots, selectSpot);
@@ -167,7 +181,6 @@ function selectSpot(rank) {
   if (!lastResult) return;
   const spot = lastResult.spots.find((s) => s.rank === rank);
   if (!spot) return;
-  selectedRank = rank;
   panelCtl?.select(rank);
   map.showFootprint(lastResult, spot);
   map.flyToSpot(spot);
@@ -181,7 +194,7 @@ async function open3d(rank) {
   if (!spot) return;
   $('viewer').hidden = false;
   $('viewer-title').textContent = `3D stand-eye view - Vantage ${rank}`;
-  view3dMod = view3dMod || await import('./scene/view3d.js');
+  view3dMod = view3dMod || (await import('./scene/view3d.js'));
   // give the canvas a frame to lay out before sizing the renderer
   requestAnimationFrame(() => view3dMod.openViewer($('viewer-canvas'), lastResult, spot));
 }
@@ -200,8 +213,12 @@ $('viewer-close').addEventListener('click', () => {
   // Reject out-of-range or inverted boxes: they otherwise reach the mercator
   // math as a negative-width parcel or a past-the-pole latitude.
   const inRange =
-    box.south >= -85 && box.north <= 85 && box.south < box.north &&
-    box.west >= -180 && box.east <= 180 && box.west < box.east;
+    box.south >= -85 &&
+    box.north <= 85 &&
+    box.south < box.north &&
+    box.west >= -180 &&
+    box.east <= 180 &&
+    box.west < box.east;
   if (!inRange) return;
   let fired = false;
   const start = () => {
