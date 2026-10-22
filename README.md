@@ -28,14 +28,14 @@ No API keys. Everything runs on free, keyless data:
    sightlines over the terrain and the tree canopy (canopy surface equals ground
    plus an effective tree height that scales with density), then blends:
 
-   | Factor | What it rewards |
-   |---|---|
-   | Visibility | sees the most huntable ground in range (closer counts for more) |
-   | Edge habitat | overlooks forest-to-opening transitions where game moves |
-   | High ground | local prominence, for better sightlines and thermals |
-   | Sun and aspect | sun-favored slopes for the chosen hunt window |
-   | Wind discipline | keeps your scent off the prime habitat |
-   | Concealment | sits in edge cover so you are not skylined |
+   | Factor          | What it rewards                                                 |
+   | --------------- | --------------------------------------------------------------- |
+   | Visibility      | sees the most huntable ground in range (closer counts for more) |
+   | Edge habitat    | overlooks forest-to-opening transitions where game moves        |
+   | High ground     | local prominence, for better sightlines and thermals            |
+   | Sun and aspect  | sun-favored slopes for the chosen hunt window                   |
+   | Wind discipline | keeps your scent off the prime habitat                          |
+   | Concealment     | sits in edge cover so you are not skylined                      |
 
 4. You get ranked spots: a green-to-red vantage heatmap, numbered pins, each
    spot's exact viewshed footprint, acres of open ground visible, a GPX export,

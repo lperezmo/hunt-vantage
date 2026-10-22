@@ -3,7 +3,8 @@
 export function renderResults(container, spots, { onSelect, onView3d }) {
   container.innerHTML = '';
   if (!spots || !spots.length) {
-    container.innerHTML = '<p class="empty">No vantage points found - try a larger or more varied area.</p>';
+    container.innerHTML =
+      '<p class="empty">No vantage points found - try a larger or more varied area.</p>';
     return { select: () => {} };
   }
 
@@ -26,7 +27,10 @@ export function renderResults(container, spots, { onSelect, onView3d }) {
       <div class="coords">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)} · ${s.elevation} m</div>
       <button class="view3d">View in 3D</button>`;
     card.addEventListener('click', () => onSelect(s.rank));
-    card.querySelector('.view3d').addEventListener('click', (e) => { e.stopPropagation(); onView3d(s.rank); });
+    card.querySelector('.view3d').addEventListener('click', (e) => {
+      e.stopPropagation();
+      onView3d(s.rank);
+    });
     container.appendChild(card);
     cards.push(card);
   });
@@ -45,12 +49,16 @@ export function renderResults(container, spots, { onSelect, onView3d }) {
 }
 
 function downloadGpx(spots) {
-  const pts = spots.map((s) =>
-    `  <wpt lat="${s.lat.toFixed(6)}" lon="${s.lon.toFixed(6)}">
+  const pts = spots
+    .map(
+      (s) =>
+        `  <wpt lat="${s.lat.toFixed(6)}" lon="${s.lon.toFixed(6)}">
     <ele>${s.elevation}</ele>
     <name>Vantage ${s.rank} (score ${s.rating})</name>
     <desc>${escapeXml(s.why)}. ~${s.visibleAcres} acres visible.</desc>
-  </wpt>`).join('\n');
+  </wpt>`,
+    )
+    .join('\n');
   const gpx = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="Hunt Vantage" xmlns="http://www.topografix.com/GPX/1/1">
 ${pts}
@@ -63,4 +71,8 @@ ${pts}
   URL.revokeObjectURL(a.href);
 }
 
-const escapeXml = (s) => s.replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
+const escapeXml = (s) =>
+  s.replace(
+    /[<>&'"]/g,
+    (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c],
+  );
