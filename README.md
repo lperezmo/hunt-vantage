@@ -70,9 +70,9 @@ To set it up fresh: import the repo into Vercel (framework preset Vite), or run
 
 ## Checks
 
-`bun run check` runs the formatter, the linter and the build. `bun fmt` and
-`bun lint` only exist on Bun canary for now (`bun upgrade --canary`), so CI runs
-them on canary and keeps the build job on the pinned Bun release.
+`bun run check` runs the formatter, the linter and the build. `bun fmt` ships in
+Bun 1.4.4, but `bun lint` only exists on Bun canary for now (`bun upgrade --canary`),
+so CI runs both on canary and keeps the build job on the pinned Bun release.
 
 ## Caveats
 
